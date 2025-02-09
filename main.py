@@ -13,11 +13,13 @@ Simpliy put the key in the file.
 
 class GoogleMap:
     def __init__(self) -> None:
-        self.debugging = True
+        self.debugging = True 
         self.debugging = False
         self.calculation_departure = list()
         self.calculation_arrival = list()
         self.url = f"https://maps.googleapis.com/maps/api/directions/json"
+        self.output = ""
+        self.api_key = self.read_text_file()
     def debugger(self,msg):
         if self.debugging == True:
             print(f'[debug]'+'-'*10+f'{msg}')
@@ -41,20 +43,26 @@ class GoogleMap:
             raise FileNotFoundError(f"The file '{file_path}' does not exist.")
         except Exception as e:
             raise Exception(f"An error occurred while reading the file: {e}")
+    def print_n_debug(self,text):
+        text = str(text)
+        self.debugger(text)
+        self.output = self.output + text + "\n"
     def get_distance(self, origin, destination,the_time, time_mode):
+        self.print_n_debug("-   -     -     -     -     -")
         # Parameters
         params = {
             "origin": origin,  # Starting location
             "destination": destination,  # Destination
             "mode": "driving",  # Travel mode (transit supports arrival_time)
             "avoid": "tolls",
-            # "traffic_model": "pessimistic",
+
             "key": self.api_key  # Replace with your Google Maps API key
         }
         if time_mode == "arrival_time":
             params["arrival_time"] = self.time_format_converter(the_time)["unix_timestamp"]
         if time_mode == "departure_time":
             params["departure_time"] = self.time_format_converter(the_time)["unix_timestamp"]
+            params["traffic_model"] = "pessimistic"
         # Request directions
         response = requests.get(self.url, params=params)
         actual_url = requests.Request('GET', self.url, params=params).prepare().url
@@ -63,19 +71,23 @@ class GoogleMap:
         # Check if the request was successful
         data = response.json()  # Parse the JSON response
         if data['status'] != 'OK':
+            print(params)
+            print(self.time_format_converter(the_time))
             print(data)  # Print the data or process it as needed
             exit()
         # Extract duration and calculate "leave by" time
+        self.print_n_debug(f"params: {params}")
+        self.print_n_debug(f"Duration: {data}")
         if data.get("status") == "OK":
-            print(f"{self.extract_address_from_google_maps_url(origin)} -> {self.extract_address_from_google_maps_url(destination)}")
+            self.print_n_debug(f"{self.extract_address_from_google_maps_url(origin)} -> {self.extract_address_from_google_maps_url(destination)}")
             if time_mode == "arrival_time":
                 duration_seconds = data["routes"][0]["legs"][0]["duration"]["value"]  # Total duration in seconds
                 leave_by_time = params["arrival_time"] - duration_seconds
                 formatted_duration_seconds = self.format_duration(duration_seconds)
                 # Convert leave_by_time to readable format
                 leave_by_time_str = self.time_format_converter(leave_by_time)["time_str"]
-                print(f"Duration: {formatted_duration_seconds}")
-                print(f"Leave by: {leave_by_time_str}")
+                self.print_n_debug(f"Duration: {formatted_duration_seconds}")
+                self.print_n_debug(f"Leave by: {leave_by_time_str}")
                 self.calculation_arrival.append(leave_by_time)
                 data = {
                     "origin" : origin,
@@ -93,9 +105,9 @@ class GoogleMap:
                 leave_by_time_str = self.time_format_converter(leave_by_time)["time_str"]
                 actual_leave_by_time_strrr = self.time_format_converter(leave_by_time)["unix_timestamp"] - duration_seconds
                 actual_leave_by_time_strrr = self.time_format_converter(actual_leave_by_time_strrr)["time_str"]
-                print(f"Duration: {formatted_duration_seconds}")
-                print(f"Departing at: {actual_leave_by_time_strrr}")
-                print(f"Arriving at: {leave_by_time_str}")
+                self.print_n_debug(f"Duration: {formatted_duration_seconds}")
+                self.print_n_debug(f"Departing at: {actual_leave_by_time_strrr}")
+                self.print_n_debug(f"Arriving at: {leave_by_time_str}")
                 data = {
                     "origin" : origin,
                     "destination" : destination,
@@ -104,9 +116,8 @@ class GoogleMap:
                     "timestamp_int" : leave_by_time
                 }
                 self.calculation_departure.append(data)
-        print("Google: " + destination)
-        print("Waze: " + self.get_wise_link(destination))
-        print("-   -     -     -     -     -")
+        self.print_n_debug("Google: " + destination)
+        self.print_n_debug("Waze: " + self.get_wise_link(destination))
         return leave_by_time_str, duration_seconds
     @staticmethod
     def replace_spaces_with_plus(input_string):
@@ -232,8 +243,8 @@ class GoogleMap:
             else:
                 the_time, duration_seconds = self.get_distance(lst[self.i],lst[self.i + 1],the_time,time_mode)
             total_time += duration_seconds
-        
-        print("total_time: " + self.format_duration(total_time))
+        self.print_n_debug("-   -     -     -     -     -")
+        self.print_n_debug("total_time: " + self.format_duration(total_time))
         return pairs
     def get_wise_link(self,google_link: str):
         resolved_url = self.replace_spaces_with_plus(google_link)
@@ -404,39 +415,48 @@ class GoogleMap:
         else:
             raise ValueError("The URL does not contain a recognizable address.")
     def real_deal(self):
-        self.api_key = self.read_text_file()
-        the_time = "2025-01-16 10:00:00"
+        # "https://www.google.com/maps/place/50+Ann+O'Reilly+Rd,+Toronto,+ON+M2J+0C9/@43.7745775,-79.332989,17z/data=!3m1!4b1!4m6!3m5!1s0x89d4d259778d7a0b:0x128352a7d2d36c62!8m2!3d43.7745737!4d-79.3304141!16s%2Fg%2F11ffm67ldh?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D",
         place_list = [
             "https://www.google.com/maps/place/50+Ann+O'Reilly+Rd,+Toronto,+ON+M2J+0C9/@43.7745775,-79.332989,17z/data=!3m1!4b1!4m6!3m5!1s0x89d4d259778d7a0b:0x128352a7d2d36c62!8m2!3d43.7745737!4d-79.3304141!16s%2Fg%2F11ffm67ldh?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D",
-            "43 Elm St, Toronto, ON M5G 1H1"
+            "https://www.google.com/maps/place/Loyal+Trust+Auto+Ltd/@43.8523893,-79.4295506,17z/data=!3m2!4b1!5s0x882b2ba020cd6c23:0x2fa2a35c486ad526!4m6!3m5!1s0x882b2b9f8850ee2d:0x843b252d9a9fa7d2!8m2!3d43.8523855!4d-79.4269757!16s%2Fg%2F1tg9t9rh?authuser=0&entry=ttu&g_ep=EgoyMDI1MDEyMC4wIKXMDSoASAFQAw%3D%3D"  
             ]
         place_list = [
-            "https://www.google.com/maps/place/50+Ann+O'Reilly+Rd,+Toronto,+ON+M2J+0C9/@43.7745775,-79.332989,17z/data=!3m1!4b1!4m6!3m5!1s0x89d4d259778d7a0b:0x128352a7d2d36c62!8m2!3d43.7745737!4d-79.3304141!16s%2Fg%2F11ffm67ldh?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D",
-            "https://www.google.com/maps/place/4+Bonnycastle+Rd,+Markham,+ON+L6G+0C2/@43.8502171,-79.3311634,17z/data=!3m1!4b1!4m6!3m5!1s0x89d4d45a34c2bdeb:0x9131e80a13e52a10!8m2!3d43.8502133!4d-79.3285885!16s%2Fg%2F11c5m3vnnq?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D",
-            "https://www.google.com/maps/place/6301+Silver+Dart+Dr,+Mississauga,+ON+L4V+1R9/@43.6809648,-79.6142207,17z/data=!3m1!4b1!4m6!3m5!1s0x882b39734fca5fe5:0xc52158585e7c62e9!8m2!3d43.6809609!4d-79.6116458!16s%2Fg%2F11fm3y1jfd?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D",
-            "https://www.google.com/maps/place/50+Ann+O'Reilly+Rd,+Toronto,+ON+M2J+0C9/@43.7745775,-79.332989,17z/data=!3m1!4b1!4m6!3m5!1s0x89d4d259778d7a0b:0x128352a7d2d36c62!8m2!3d43.7745737!4d-79.3304141!16s%2Fg%2F11ffm67ldh?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D"
+            r"https://www.google.com/maps/place/50+Ann+O'Reilly+Rd,+Toronto,+ON+M2J+0C9/@43.7745775,-79.332989,17z/data=!3m1!4b1!4m6!3m5!1s0x89d4d259778d7a0b:0x128352a7d2d36c62!8m2!3d43.7745737!4d-79.3304141!16s%2Fg%2F11ffm67ldh?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D",
+            r"https://www.google.com/maps/place/66+Wickstead+Way,+Thornhill,+ON+L3T+5E5/data=!4m2!3m1!1s0x89d4d34239f2d51d:0xbcccfc5d3fcd26aa?sa=X&ved=1t:242&ictx=111",
+            r"https://www.google.ca/maps/place/5+Francesco+Ct,+Unionville,+ON+L3R+9N3/@43.8590641,-79.365221,12.04z/data=!4m6!3m5!1s0x89d4d452b1e1fed5:0xad176d59df8fbc42!8m2!3d43.8612287!4d-79.3247284!16s%2Fg%2F11hbnwwm8b?entry=ttu&g_ep=EgoyMDI1MDIwNS4xIKXMDSoASAFQAw%3D%3D",
+            r"https://www.google.ca/maps/place/23+Dellano+St,+Markham,+ON+L3S+2N6/@43.8169103,-79.3310708,13.33z",
+            r"https://www.google.com/maps/place/31+Oakborough+Dr,+Markham,+ON+L6B+0H3/@43.8656566,-79.2250414,16z/data=!3m1!4b1!4m6!3m5!1s0x89d4d7bdcddd8483:0x10ee30dc48ef530d!8m2!3d43.8656566!4d-79.2250414!16s%2Fg%2F11c2dm_qpg?entry=ttu&g_ep=EgoyMDI1MDIwNS4xIKXMDSoASAFQAw%3D%3D"
             ]
+        # place_list = [
+        #     r"https://www.google.ca/maps/place/5+Francesco+Ct,+Unionville,+ON+L3R+9N3/@43.8590641,-79.365221,12.04z/data=!4m6!3m5!1s0x89d4d452b1e1fed5:0xad176d59df8fbc42!8m2!3d43.8612287!4d-79.3247284!16s%2Fg%2F11hbnwwm8b?entry=ttu&g_ep=EgoyMDI1MDIwNS4xIKXMDSoASAFQAw%3D%3D",
+        #     r"https://www.google.com/maps/place/23+Dellano+St,+Markham,+ON+L3S+2N6"
+        #     ]
         time_mode = "departure_time"
         time_mode = "arrival_time"
-        self.get_element_pairs(place_list,the_time,time_mode)
+        self.get_element_pairs(place_list,self.the_time,time_mode)
         if time_mode == "arrival_time":
             loop_arrival = datetime.fromtimestamp(self.calculation_arrival[-1]["timestamp_int"])
             while True:
+                print("calculating...")
+                self.output = ""
                 self.get_element_pairs(place_list,loop_arrival,"departure_time")
-                result = self.compare_times(loop_arrival,the_time,self.calculation_departure[-1]["timestamp_int"])
+                result = self.compare_times(loop_arrival,self.the_time,self.calculation_departure[-1]["timestamp_int"])
                 if result is True:
                     self.debugger("self.calculation_departure: ")
                     self.debugger(self.calculation_departure)
-                    human_readable_time = datetime.fromtimestamp(loop_arrival).strftime("%Y-%m-%d %H:%M:%S")
-                    self.debugger("human_readable_timeaaa: " + human_readable_time)
+                    # human_readable_time = datetime.fromtimestamp(loop_arrival).strftime("%Y-%m-%d %H:%M:%S")
+                    # self.debugger("human_readable_timeaaa: " + human_readable_time)
                     break
                 else:
                     timestamp = int(result['adjusted_time'].timestamp())
                     human_readable_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
                     loop_arrival = timestamp
                     self.calculation_departure.clear()
-                    print(" ********************************\n\n"* 3)
+                    self.print_n_debug(" ********************************\n\n"* 3)
+        print(self.output)
 if __name__ == "__main__":
     map = GoogleMap()
+    # print(map.get_wise_link("23 Dellano St, Markham, ON L3S 2N6"))
+    map.the_time = "2025-02-09 17:00:00"
     map.real_deal()
     # map.get_distance()
