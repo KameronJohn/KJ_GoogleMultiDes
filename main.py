@@ -442,37 +442,15 @@ class GoogleMap:
         else:
             return url
             # raise ValueError("The URL does not contain a recognizable address.")
-    def real_deal(self):
-        # "https://www.google.com/maps/place/50+Ann+O'Reilly+Rd,+Toronto,+ON+M2J+0C9/@43.7745775,-79.332989,17z/data=!3m1!4b1!4m6!3m5!1s0x89d4d259778d7a0b:0x128352a7d2d36c62!8m2!3d43.7745737!4d-79.3304141!16s%2Fg%2F11ffm67ldh?entry=ttu&g_ep=EgoyMDI1MDExMC4wIKXMDSoASAFQAw%3D%3D",
-        place_list = [
-            r"50 Ann O'Reilly Rd, North York",
-            r"66 Wickstead Way, Thornhill, ON L3T 5E5",
-            r"23 Dellano St, Markham, ON L3S 2N6",
-            r"https://www.google.com/maps/place/31+Oakborough+Dr,+Markham,+ON+L6B+0H3/@43.8656566,-79.2250414,16z/data=!3m1!4b1!4m6!3m5!1s0x89d4d7bdcddd8483:0x10ee30dc48ef530d!8m2!3d43.8656566!4d-79.2250414!16s%2Fg%2F11c2dm_qpg?entry=ttu&g_ep=EgoyMDI1MDIwNS4xIKXMDSoASAFQAw%3D%3D",
-            r"VQCH+RCG Markham, Ontario"
-            ]
-        # place_list = [
-        #     "https://www.google.com/maps/place/50+Ann+O'Reilly+Rd,+North+York,+ON+M2J+0C9",
-        #     "https://www.google.com/maps/place/5+Francesco+Ct,+Unionville,+ON+L3R+9N3"  
-        #     ]
-        # place_list = [
-        #     "50 Ann O'Reilly+Rd, North+York",
-        #     "5 Francesco+Ct, Unionville, ON L3R 9N3"  
-        #     ]
-        # place_list = [
-        #     r"https://www.google.ca/maps/place/5+Francesco+Ct,+Unionville,+ON+L3R+9N3/@43.8590641,-79.365221,12.04z/data=!4m6!3m5!1s0x89d4d452b1e1fed5:0xad176d59df8fbc42!8m2!3d43.8612287!4d-79.3247284!16s%2Fg%2F11hbnwwm8b?entry=ttu&g_ep=EgoyMDI1MDIwNS4xIKXMDSoASAFQAw%3D%3D",
-        #     r"https://www.google.com/maps/place/23+Dellano+St,+Markham,+ON+L3S+2N6"
-        #     ]
-        time_mode = "departure_time"
-        time_mode = "arrival_time"
-        self.get_element_pairs(place_list,self.the_time,time_mode)
+    def real_deal(self,the_time,place_list,time_mode):
+        self.get_element_pairs(place_list,the_time,time_mode)
         if time_mode == "arrival_time":
             loop_arrival = datetime.fromtimestamp(self.calculation_arrival[-1]["timestamp_int"])
             while True:
                 print("calculating...")
                 self.output = ""
                 self.get_element_pairs(place_list,loop_arrival,"departure_time")
-                result = self.compare_times(loop_arrival,self.the_time,self.calculation_departure[-1]["timestamp_int"])
+                result = self.compare_times(loop_arrival,the_time,self.calculation_departure[-1]["timestamp_int"])
                 if result is True:
                     self.debugger("self.calculation_departure: ")
                     self.debugger(self.calculation_departure)
@@ -488,7 +466,14 @@ class GoogleMap:
         print(self.output)
 if __name__ == "__main__":
     map = GoogleMap()
-    # print(map.get_wise_link("23 Dellano St, Markham, ON L3S 2N6"))
-    map.the_time = "2025-02-09 17:00:00"
-    map.real_deal()
+    place_list = [
+    r"50 Ann O'Reilly Rd, North York",
+    r"66 Wickstead Way, Thornhill, ON L3T 5E5",
+    r"500 Copper Creek Dr, Markham, ON L0H 1J0",
+    r"https://www.google.com/maps/place/31+Oakborough+Dr,+Markham,+ON+L6B+0H3/@43.8656566,-79.2250414,16z/data=!3m1!4b1!4m6!3m5!1s0x89d4d7bdcddd8483:0x10ee30dc48ef530d!8m2!3d43.8656566!4d-79.2250414!16s%2Fg%2F11c2dm_qpg?entry=ttu&g_ep=EgoyMDI1MDIwNS4xIKXMDSoASAFQAw%3D%3D"
+    ]
+    the_time = "2025-02-09 15:55:00"
+    time_mode = "arrival_time"
+    time_mode = "departure_time"
+    map.real_deal(the_time,place_list,time_mode)
     # map.get_distance()
