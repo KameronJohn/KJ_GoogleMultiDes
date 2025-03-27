@@ -6,6 +6,9 @@ import re
 from urllib.parse import urlparse, unquote
 import os
 import re
+import random
+import string
+import pyperclip
 """ 
 make sure you have "api_key.txt" in the same directory.
 Simpliy put the key in the file.
@@ -71,6 +74,11 @@ class GoogleMap:
         # Check if the request was successful
         data = response.json()  # Parse the JSON response
         if data['status'] != 'OK':
+            if data['error_message'] == "departure_time is in the past. Traffic information is only available for future and current times.":
+                print(data['error_message'])
+                map.real_deal(the_time,place_list,time_mode)
+                exit()
+                # current_date = datetime.today().strftime(r'%Y-%m-%d')
             print(params)
             print(self.time_format_converter(the_time))
             print(data)  # Print the data or process it as needed
@@ -442,7 +450,59 @@ class GoogleMap:
         else:
             return url
             # raise ValueError("The URL does not contain a recognizable address.")
+    def input_type(self,x):
+        if isinstance(x, (int, float)):
+            return "Number"
+        elif isinstance(x, str):
+            return "String"
+        elif isinstance(x, list):
+            return "List"
+        elif isinstance(x, dict):
+            return "Dictionary"
+        elif callable(x):
+            return "Function"
+        else:
+            return "Unknown"
+    def input_data_transformation(self,x):
+        if self.input_type(x) == "List":
+            return x
+        elif self.input_type(x) == "String":
+            x = self.transform(x)
+
+            return x
+        else:
+            raise ValueError("Invalid input type. Please provide a list of addresses or a string.")
+    def transform(self,x):
+        """ 
+         https://www.google.com/maps/dir/50+Ann+O'Reilly+Rd,+North+York,+ON+M2J+0C9%E5%8A%A0%E6%8B%BF%E5%A4%A7/188+Doris+Avenue,+North+York,+ON/
+         66+Wickstead+Way,+Markham,+ON/
+         5500+Yonge+Street,+North+York,+ON
+         /Markham+Civic+Centre+Skating+Rink,+Town+Centre+Boulevard,+Markham,+ON/@43.8079525,-79.4099664,13z/
+         data=!3m1!4b1!4m37!4m36!1m5!1m1!1s0x89d4d25981dac073:0x4e307e570ee94a10!2m2!1d-79.3300828!2d43.774753!1m
+         5!1m1!1s0x882b2d6f05503125:0x9f7ee3cd6a33fe4b!2m2!1d-79.4106083!2d43.7674214!1m5!1m1!1s0x89d4d34239f2d51d:0x
+         bcccfc5d3fcd26aa!2m2!1d-79.3598638!2d43.813794!1m5!1m1!1s0x882b2d0da1d00117:0x6e8924b76d6b1274!2m2!1d-79.4154722!2d43.7
+         782504!1m5!1m1!1s0x89d4d4f8a315134d:0x189f08bb31ca852c!2m2!1d-79.3358396!2d43.8564264!2m4!2b1!6e0!7e2!8j1739687820!3e0?
+         entry=ttu&g_ep=EgoyMDI1MDIxMi4wIKXMDSoJLDEwMjExNDU1SAFQAw%3D%3D
+           """
+        """ 
+         https://www.google.com/maps/dir/50+Ann+O'Reilly+Rd,+North+York,+ON+M2J+0C9%E5%8A%A0%E6%8B%BF%E5%A4%A7/188+Doris+Avenue,+North+York,+ON/66+Wickstead+Way,+Markham,+ON/5500+Yonge+Street,+North+York,+ON/Markham+Civic+Centre+Skating+Rink,+Town+Centre+Boulevard,+Markham,+ON/@43.8079525,-79.4099664,13z/data=!3m1!4b1!4m37!4m36!1m5!1m1!1s0x89d4d25981dac073:0x4e307e570ee94a10!2m2!1d-79.3300828!2d43.774753!1m5!1m1!1s0x882b2d6f05503125:0x9f7ee3cd6a33fe4b!2m2!1d-79.4106083!2d43.7674214!1m5!1m1!1s0x89d4d34239f2d51d:0xbcccfc5d3fcd26aa!2m2!1d-79.3598638!2d43.813794!1m5!1m1!1s0x882b2d0da1d00117:0x6e8924b76d6b1274!2m2!1d-79.4154722!2d43.7782504!1m5!1m1!1s0x89d4d4f8a315134d:0x189f08bb31ca852c!2m2!1d-79.3358396!2d43.8564264!2m4!2b1!6e0!7e2!8j1739687820!3e0?entry=ttu&g_ep=EgoyMDI1MDIxMi4wIKXMDSoJLDEwMjExNDU1SAFQAw%3D%3D
+           """
+        pattern = r"https://www\.google\.com/maps/dir/(.*?)/@"
+        match = re.search(pattern, x)
+        y = match.group(1)
+        if match:
+            extracted_string = match.group(1)
+            if "%" in extracted_string:
+                extracted_string = re.sub(r'\+*%[a-zA-Z0-9]{2}\+*', '', extracted_string)
+                cleaned_list = extracted_string.replace('+', ' ').split('/')
+                return cleaned_list  # Return cleaned string
+        raise ValueError("Invalid input type. pattern not found")
+    @staticmethod
+    def generate_4_digit_or_letter():
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+
     def real_deal(self,the_time,place_list,time_mode):
+        place_list = self.input_data_transformation(place_list)
         self.get_element_pairs(place_list,the_time,time_mode)
         if time_mode == "arrival_time":
             loop_arrival = datetime.fromtimestamp(self.calculation_arrival[-1]["timestamp_int"])
@@ -463,17 +523,23 @@ class GoogleMap:
                     loop_arrival = timestamp
                     self.calculation_departure.clear()
                     self.print_final_result(" ********************************\n\n"* 3)
+        self.output = "\n\n\n\n" + self.output + "ref: "+self.generate_4_digit_or_letter()
+        pyperclip.copy(self.output)
         print(self.output)
 if __name__ == "__main__":
     map = GoogleMap()
-    place_list = [
-    r"50 Ann O'Reilly Rd, North York",
-    r"66 Wickstead Way, Thornhill, ON L3T 5E5",
-    r"500 Copper Creek Dr, Markham, ON L0H 1J0",
-    r"https://www.google.com/maps/place/31+Oakborough+Dr,+Markham,+ON+L6B+0H3/@43.8656566,-79.2250414,16z/data=!3m1!4b1!4m6!3m5!1s0x89d4d7bdcddd8483:0x10ee30dc48ef530d!8m2!3d43.8656566!4d-79.2250414!16s%2Fg%2F11c2dm_qpg?entry=ttu&g_ep=EgoyMDI1MDIwNS4xIKXMDSoASAFQAw%3D%3D"
-    ]
-    the_time = "2025-02-09 15:55:00"
-    time_mode = "arrival_time"
+    # print(map.get_wise_link("https://www.google.com/maps/place/43%C2%B048'48.7%22N+79%C2%B014'53.3%22W/@43.8135311,-79.25052,18z/data=!4m8!1m3!11m2!2sHd5PxpIZVzYZxQSnXyO7FVuUlvq4Cg!3e3!3m3!8m2!3d43.8135311!4d-79.2481382?authuser=0&entry=ttu&g_ep=EgoyMDI1MDMxMi4wIKXMDSoJLDEwMjExNDU1SAFQAw%3D%3D"))
+    # place_list = [
+    # r"50 Ann O'Reilly Rd, North York",
+    # r"188 Doris Ave, North York, ON M2N 6Z5",
+    # r"5500 Yonge St, Toronto, ON M2N 7L1",
+    # r"66 Wickstead Way, Thornhill, ON L3T 5E5",
+    # r"Markham Civic Centre Skating Rink, 171 Town Centre Blvd, Markham, ON L3P 7V1"
+    # ]
+    # place_list = r"https://www.google.com/maps/dir/50+Ann+O'Reilly+Rd,+North+York,+ON+M2J+0C9%E5%8A%A0%E6%8B%BF%E5%A4%A7/188+Doris+Avenue,+North+York,+ON/66+Wickstead+Way,+Markham,+ON/5500+Yonge+Street,+North+York,+ON/Markham+Civic+Centre+Skating+Rink,+Town+Centre+Boulevard,+Markham,+ON/@43.8079525,-79.4099664,13z/data=!3m1!4b1!4m37!4m36!1m5!1m1!1s0x89d4d25981dac073:0x4e307e570ee94a10!2m2!1d-79.3300828!2d43.774753!1m5!1m1!1s0x882b2d6f05503125:0x9f7ee3cd6a33fe4b!2m2!1d-79.4106083!2d43.7674214!1m5!1m1!1s0x89d4d34239f2d51d:0xbcccfc5d3fcd26aa!2m2!1d-79.3598638!2d43.813794!1m5!1m1!1s0x882b2d0da1d00117:0x6e8924b76d6b1274!2m2!1d-79.4154722!2d43.7782504!1m5!1m1!1s0x89d4d4f8a315134d:0x189f08bb31ca852c!2m2!1d-79.3358396!2d43.8564264!2m4!2b1!6e0!7e2!8j1739687820!3e0?entry=ttu&g_ep=EgoyMDI1MDIxMi4wIKXMDSoJLDEwMjExNDU1SAFQAw%3D%3D"
+    place_list = input("put link\n")
+    the_time = "2025-03-29 19:00:00"
     time_mode = "departure_time"
+    time_mode = "arrival_time"
     map.real_deal(the_time,place_list,time_mode)
     # map.get_distance()
