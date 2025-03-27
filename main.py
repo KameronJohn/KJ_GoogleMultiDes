@@ -77,7 +77,7 @@ class GoogleMap:
         if data['status'] != 'OK':
             if data['error_message'] == "departure_time is in the past. Traffic information is only available for future and current times.":
                 print(data['error_message'])
-                map.real_deal(the_time,place_list,time_mode)
+                map.da_main(the_time,place_list,time_mode)
                 exit()
                 # current_date = datetime.today().strftime(r'%Y-%m-%d')
             print(params)
@@ -504,7 +504,7 @@ class GoogleMap:
     def generate_4_digit_or_letter():
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
 
-    def real_deal(self,the_time,place_list,time_mode):
+    def da_main(self,the_time,place_list,time_mode):
         place_list = self.input_data_transformation(place_list)
         self.get_element_pairs(place_list,the_time,time_mode)
         if time_mode == "arrival_time":
@@ -529,6 +529,10 @@ class GoogleMap:
         self.output = "\n\n\n\n" + self.output + "ref: "+self.generate_4_digit_or_letter()
         pyperclip.copy(self.output)
         print(self.output)
+def real_deal(date, time, url, option):
+    the_time = date + time
+    map = GoogleMap()
+    map.da_main(the_time,url,option)
 if __name__ == "__main__":
     map = GoogleMap()
     # print(map.get_wise_link("https://www.google.com/maps/place/43%C2%B048'48.7%22N+79%C2%B014'53.3%22W/@43.8135311,-79.25052,18z/data=!4m8!1m3!11m2!2sHd5PxpIZVzYZxQSnXyO7FVuUlvq4Cg!3e3!3m3!8m2!3d43.8135311!4d-79.2481382?authuser=0&entry=ttu&g_ep=EgoyMDI1MDMxMi4wIKXMDSoJLDEwMjExNDU1SAFQAw%3D%3D"))
@@ -546,5 +550,5 @@ if __name__ == "__main__":
     the_time = "2025-03-29 23:59:00"
     time_mode = "departure_time"
     time_mode = "arrival_time"
-    map.real_deal(the_time,place_list,time_mode)
+    map.da_main(the_time,place_list,time_mode)
     # map.get_distance()
