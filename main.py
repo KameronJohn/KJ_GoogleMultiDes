@@ -50,6 +50,7 @@ class GoogleMap:
         text = str(text)
         self.debugger(text)
         self.output = self.output + text + "\n"
+
     def get_distance(self, origin, destination,the_time, time_mode):
         self.print_final_result("-   -     -     -     -     -")
         # Parameters
@@ -266,6 +267,7 @@ class GoogleMap:
                 the_time, duration_seconds = self.get_distance(lst[self.i],lst[self.i + 1],the_time,time_mode)
             total_time += duration_seconds
         self.print_final_result("-   -     -     -     -     -")
+        self.print_final_result(f"stops: {self.num_of_stops}")
         self.print_final_result("total_time: " + self.format_duration(total_time))
         return pairs
     def get_wise_link(self,google_link: str):
@@ -487,16 +489,17 @@ class GoogleMap:
         """ 
          https://www.google.com/maps/dir/50+Ann+O'Reilly+Rd,+North+York,+ON+M2J+0C9%E5%8A%A0%E6%8B%BF%E5%A4%A7/188+Doris+Avenue,+North+York,+ON/66+Wickstead+Way,+Markham,+ON/5500+Yonge+Street,+North+York,+ON/Markham+Civic+Centre+Skating+Rink,+Town+Centre+Boulevard,+Markham,+ON/@43.8079525,-79.4099664,13z/data=!3m1!4b1!4m37!4m36!1m5!1m1!1s0x89d4d25981dac073:0x4e307e570ee94a10!2m2!1d-79.3300828!2d43.774753!1m5!1m1!1s0x882b2d6f05503125:0x9f7ee3cd6a33fe4b!2m2!1d-79.4106083!2d43.7674214!1m5!1m1!1s0x89d4d34239f2d51d:0xbcccfc5d3fcd26aa!2m2!1d-79.3598638!2d43.813794!1m5!1m1!1s0x882b2d0da1d00117:0x6e8924b76d6b1274!2m2!1d-79.4154722!2d43.7782504!1m5!1m1!1s0x89d4d4f8a315134d:0x189f08bb31ca852c!2m2!1d-79.3358396!2d43.8564264!2m4!2b1!6e0!7e2!8j1739687820!3e0?entry=ttu&g_ep=EgoyMDI1MDIxMi4wIKXMDSoJLDEwMjExNDU1SAFQAw%3D%3D
            """
+        pattern = r"abc"
         pattern = r"https://www\.google\.com/maps/dir/(.*?)/@"
         match = re.search(pattern, x)
-        y = match.group(1)
-        if match:
+        try:
             extracted_string = match.group(1)
-            if "%" in extracted_string:
-                extracted_string = re.sub(r'\+*%[a-zA-Z0-9]{2}\+*', '', extracted_string)
-                cleaned_list = extracted_string.replace('+', ' ').split('/')
-                return cleaned_list  # Return cleaned string
-        raise ValueError("Invalid input type. pattern not found")
+        except:
+            raise ValueError("Invalid input type. pattern not found")
+        extracted_string = re.sub(r'\+*%[a-zA-Z0-9]{2}\+*', '', extracted_string)
+        cleaned_list = extracted_string.replace('+', ' ').split('/')
+        self.num_of_stops = len(cleaned_list)-2
+        return cleaned_list  # Return cleaned string
     @staticmethod
     def generate_4_digit_or_letter():
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
@@ -537,8 +540,10 @@ if __name__ == "__main__":
     # r"Markham Civic Centre Skating Rink, 171 Town Centre Blvd, Markham, ON L3P 7V1"
     # ]
     # place_list = r"https://www.google.com/maps/dir/50+Ann+O'Reilly+Rd,+North+York,+ON+M2J+0C9%E5%8A%A0%E6%8B%BF%E5%A4%A7/188+Doris+Avenue,+North+York,+ON/66+Wickstead+Way,+Markham,+ON/5500+Yonge+Street,+North+York,+ON/Markham+Civic+Centre+Skating+Rink,+Town+Centre+Boulevard,+Markham,+ON/@43.8079525,-79.4099664,13z/data=!3m1!4b1!4m37!4m36!1m5!1m1!1s0x89d4d25981dac073:0x4e307e570ee94a10!2m2!1d-79.3300828!2d43.774753!1m5!1m1!1s0x882b2d6f05503125:0x9f7ee3cd6a33fe4b!2m2!1d-79.4106083!2d43.7674214!1m5!1m1!1s0x89d4d34239f2d51d:0xbcccfc5d3fcd26aa!2m2!1d-79.3598638!2d43.813794!1m5!1m1!1s0x882b2d0da1d00117:0x6e8924b76d6b1274!2m2!1d-79.4154722!2d43.7782504!1m5!1m1!1s0x89d4d4f8a315134d:0x189f08bb31ca852c!2m2!1d-79.3358396!2d43.8564264!2m4!2b1!6e0!7e2!8j1739687820!3e0?entry=ttu&g_ep=EgoyMDI1MDIxMi4wIKXMDSoJLDEwMjExNDU1SAFQAw%3D%3D"
-    place_list = input("put link\n")
-    the_time = "2025-03-29 19:00:00"
+    # place_list = input("put link\n")
+    # place_list = r"place_list"
+    place_list = input("Enter the Google Maps URL: ")
+    the_time = "2025-03-29 23:59:00"
     time_mode = "departure_time"
     time_mode = "arrival_time"
     map.real_deal(the_time,place_list,time_mode)
